@@ -21,7 +21,8 @@ var tc = {
       teams.microsoft.com
     `.replace(regStrip, ""),
     defaultLogLevel: 4,
-    logLevel: 3
+    logLevel: 3,
+    skipTwitchAdKey: 96
   },
 
   // Holds a reference to all of the AUDIO/VIDEO DOM elements we've attached to
@@ -297,7 +298,7 @@ function defineVideoController() {
 
         <div id="controller" style="top:${top}; left:${left}; opacity:${
       tc.settings.controllerOpacity
-    }">
+      }">
           <span data-action="drag" class="draggable">${speed}</span>
           <span id="controls">
             <button data-action="rewind" class="rw">«</button>
@@ -496,6 +497,7 @@ function initializeWhenReady(document) {
   }
   log("End initializeWhenReady", 5);
 }
+
 function inIframe() {
   try {
     return window.self !== window.top;
@@ -503,6 +505,7 @@ function inIframe() {
     return true;
   }
 }
+
 function getShadow(parent) {
   let result = [];
   function getChild(parent) {
@@ -549,7 +552,7 @@ function initializeNow(document) {
   var docs = Array(document);
   try {
     if (inIframe()) docs.push(window.top.document);
-  } catch (e) {}
+  } catch (e) { }
 
   docs.forEach(function (doc) {
     doc.addEventListener(
@@ -583,6 +586,13 @@ function initializeNow(document) {
 
         // Ignore keydown event if typing in a page without vsc
         if (!tc.mediaElements.length) {
+          return false;
+        }
+
+        if (keyCode === tc.settings.skipTwitchAdKey) {
+          runAction("skip");
+          event.preventDefault();
+          event.stopPropagation();
           return false;
         }
 
@@ -790,6 +800,47 @@ function runAction(action, value, e) {
         setMark(v);
       } else if (action === "jump") {
         jumpToMark(v);
+      } else if (action === "skip") {
+        // console.log(v.currentTime)
+        // console.log(v)
+        // console.log(v.duration)
+        // Increase speed drastically then back to normal
+        const nodes = document.getElementsByClassName('tw-c-text-overlay');
+        // console.log(nodes[4]?.innerHTML?.split(' : ')[1])
+        const adTimerNode = nodes[4];
+        if (adTimerNode !== undefined) {
+          if (adTimerNode.innerHTML?.split(' : ')[1] !== undefined) {
+            let timer = parseInt(adTimerNode.innerHTML?.split(' : ')[1]);
+            if (timer > 0) {
+              // console.log("skipped!")
+              v.currentTime += (timer - 2);
+              // setSpeed(v, 16);
+              // v.currentTime += 2;
+              // setTimeout(() => {
+              //   v.currentTime += 2;
+              //   setTimeout(() => {
+              //     v.currentTime += 2;
+              //     setTimeout(() => {
+              //       v.currentTime += 2;
+              //     }, 1000)
+              //   }, 1000)
+              // }, 1000)
+              // let localTimer = 0;
+              // const advance = setInterval(() => {
+              //   if (localTimer > (timer - 4)) {
+              //     clearInterval(advance);
+              //   }
+              //   v.currentTime += 2;
+              //   localTimer += 2;
+              // }, 1000)
+              // setSpeed(v, 16);
+              // setTimeout(() => {
+              //   resetSpeed(v, 1.0);
+              // }, 3000)
+            }
+          }
+        }
+        // console.log(parseInt(nodes[4]?.innerHTML?.split(' : ')[1]))
       }
     }
   });
